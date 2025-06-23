@@ -9,6 +9,9 @@
     gl_dest_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/rhdh/opencodequest-templates
     repo_local_path: /tmp/gh
 
+    rhdh_gitops_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/gitops/janus-idp-gitops
+    rhdh_gitops_repo_local_path: /tmp/janus-idp-gitops
+
   tasks:
     - name: Get GitLab's Route
       kubernetes.core.k8s_info:
@@ -134,3 +137,55 @@
       args:
         chdir: "{{ repo_local_path }}"
 
+    - name: Clone janus-idp-gitops repo
+      ansible.builtin.git:
+        repo: "{{ rhdh_gitops_repo }}"
+        dest: "{{ rhdh_gitops_repo_local_path }}"
+        clone: yes
+        update: yes
+
+    - name: Load the value file
+      set_fact:
+        yaml_data: "{{ lookup('file', '{{ rhdh_gitops_repo_local_path }}/charts/backstage/backstage-rhtap-values.yaml') | from_yaml }}"
+
+    - name: Define new catalog locations
+      set_fact:
+        new_catalog_locations:
+          upstream:
+            backstage:
+              appConfig:
+                catalog:
+                  locations:
+                    - rules:
+                      - allow:
+                        - Template
+                      target: https://{{ gitlab_hostname }}/rhdh/opencodequest-templates/-/blob/master/scaffolder-templates/opencodequest-templates.yaml
+                      type: url
+
+    - name: Merge new catalog locations
+      set_fact:
+        updated_yaml: >-
+          {{
+            yaml_data | combine(
+              new_catalog_locations,
+              recursive=True,
+              list_merge='append'
+            )
+          }}
+
+    - name: Save the updated YAML to disk
+      ansible.builtin.copy:
+        dest: "{{ rhdh_gitops_repo_local_path }}/charts/backstage/backstage-rhtap-values.yaml"
+        content: "{{ updated_yaml | to_nice_yaml }}"
+
+    - name: git push
+      ansible.builtin.shell:
+        cmd: | 
+          cat "{{ rhdh_gitops_repo_local_path }}/charts/backstage/backstage-rhtap-values.yaml"
+          git remote add origin {{ rhdh_gitops_repo }}
+          git add .
+          git commit -m "feat: Add opencodequest templates"
+          git push -u origin main
+          rm -rf {{ rhdh_gitops_repo_local_path }}
+      args:
+        chdir: "{{ rhdh_gitops_repo_local_path }}"
