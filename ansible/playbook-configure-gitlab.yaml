@@ -38,7 +38,7 @@
       set_fact:
         root_token: '{{ r_root_token.resources[0].data.token | b64decode }}'
 
-    - name: Configure branch protection
+    - name: Remove branch protection
       ansible.builtin.uri:
         url: '{{ gitlab_api }}/application/settings'
         method: PUT
@@ -50,7 +50,7 @@
         validate_certs: false
         status_code: 200
 
-    - name: Get rhdh group
+    - name: Get GitLab rhdh group
       ansible.builtin.uri:
         url: '{{ gitlab_api }}/groups/rhdh'
         method: GET
@@ -60,7 +60,7 @@
         status_code: 200
       register: r_group
 
-    - name: Delete old template
+    - name: Delete old OpenCodeQuest templates
       ansible.builtin.uri:
         url: '{{ gitlab_api }}/projects/rhdh%2Fopencodequest-templates'
         method: DELETE
@@ -72,14 +72,14 @@
         validate_certs: false
         status_code: [ 202 , 404 ]
 
-    - name: Clone GitHub source repo
+    - name: Clone GitHub OpenCodeQuest source repo
       ansible.builtin.git:
         repo: "{{ gh_source_repo }}"
         dest: "{{ repo_local_path }}"
         clone: yes
         update: yes
 
-    - name: Modify domain_name in Location
+    - name: Update domain_name with GitLab FQDN in Location
       ansible.builtin.replace:
         path: "{{ item }}"
         regexp: 'github.com/rh-trucathon/rhdh-templates/blob/main/'
@@ -88,7 +88,7 @@
       loop:
         - "{{ repo_local_path }}/scaffolder-templates/opencodequest-templates.yaml"
 
-    - name: Modify domain_name in templates
+    - name: Update domain_name with GitLab FQDN in templates
       ansible.builtin.replace:
         path: "{{ item }}"
         regexp: 'apps.cluster-rw97m.sandbox266.opentlc.com'
@@ -100,7 +100,7 @@
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-postgresql/template.yaml"
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-with-spring-postgresql/template.yaml"
 
-    - name: Modify quay hostname
+    - name: Update quay hostname
       ansible.builtin.replace:
         path: "{{ item }}"
         regexp: 'quay-.*'
