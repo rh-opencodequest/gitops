@@ -4,7 +4,7 @@
 ## Fast Config
 
 - Provision the "Red Hat Trusted Application Pipeline" demo environment on demo.redhat.com
-- Login to OpenShift using `oc login ...``
+- Login to OpenShift using `oc login ...`
 - Configure cluster for OpenCodeQuest : `make all` 
 - Once done, you can use user1...user5 and start the lab from red.ht/opencodequest
 
