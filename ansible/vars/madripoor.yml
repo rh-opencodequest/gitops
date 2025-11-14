@@ -1,0 +1,12 @@
+#
+# Open Code Quest
+#
+opencodequest:
+  clusters:
+    - name: madripoor
+      users: [ "masong", "yorick", "sokka" ,
+               "cypher", "lucian", "volstag" ,
+               "hellboy" , "bixcal" , "wonderg" ,
+               "resista" , "sydney" , "cliffju" ,
+               "theque" , "ironfi" , "henryj" ,
+               "rh1", "rh2", "rh3" ]

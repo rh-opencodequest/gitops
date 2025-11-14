@@ -1,3 +1,5 @@
+CLUSTER ?= atlantis
+
 edb:
 	oc apply -f manifests/argocd/edb.yaml
 	oc apply -f manifests/argocd/edb-workshop-prod.yaml
@@ -9,11 +11,66 @@ devspaces:
 	ansible-playbook ansible/playbook-configure-devspaces.yaml
 
 gitlab:
-	ansible-playbook ansible/playbook-configure-gitlab.yaml
+	ansible-playbook -e cluster=$(CLUSTER) ansible/playbook-configure-gitlab.yaml
+
+keycloak:
+	ansible-playbook -e cluster=$(CLUSTER) ansible/playbook-configure-keycloak.yaml
+
+rhdh:
+	ansible-playbook -e cluster=$(CLUSTER) ansible/playbook-configure-rhdh.yaml
 
 acs: 
 	oc patch Central stackrox-central-services --patch '{"spec":{"scannerV4":{"scannerComponent": "Enabled"}}}' -n stackrox --type merge
 	oc patch SecuredCluster stackrox-secured-cluster-services --patch '{"spec":{"scannerV4":{"scannerComponent": "AutoSense"}}}' -n stackrox --type merge
 	ansible-playbook ansible/playbook-configure-acs.yaml
 
-all: edb usermonitoring devspaces gitlab acs
+all: edb usermonitoring devspaces gitlab keycloak rhdh acs
+
+# Cluster-specific targets - configure all services for a specific cluster
+atlantis:
+	$(MAKE) edb
+	$(MAKE) devspaces
+	$(MAKE) gitlab CLUSTER=atlantis
+	$(MAKE) keycloak CLUSTER=atlantis
+	$(MAKE) rhdh CLUSTER=atlantis
+	$(MAKE) acs
+
+central:
+	$(MAKE) edb
+	$(MAKE) devspaces
+	$(MAKE) gitlab CLUSTER=central
+	$(MAKE) keycloak CLUSTER=central
+	$(MAKE) rhdh CLUSTER=central
+	$(MAKE) acs
+
+gotham:
+	$(MAKE) edb
+	$(MAKE) devspaces
+	$(MAKE) gitlab CLUSTER=gotham
+	$(MAKE) keycloak CLUSTER=gotham
+	$(MAKE) rhdh CLUSTER=gotham
+	$(MAKE) acs
+
+madripoor:
+	$(MAKE) edb
+	$(MAKE) devspaces
+	$(MAKE) gitlab CLUSTER=madripoor
+	$(MAKE) keycloak CLUSTER=madripoor
+	$(MAKE) rhdh CLUSTER=madripoor
+	$(MAKE) acs
+
+metropolis:
+	$(MAKE) edb
+	$(MAKE) devspaces
+	$(MAKE) gitlab CLUSTER=metropolis
+	$(MAKE) keycloak CLUSTER=metropolis
+	$(MAKE) rhdh CLUSTER=metropolis
+	$(MAKE) acs
+
+wakanda:
+	$(MAKE) edb
+	$(MAKE) devspaces
+	$(MAKE) gitlab CLUSTER=wakanda
+	$(MAKE) keycloak CLUSTER=wakanda
+	$(MAKE) rhdh CLUSTER=wakanda
+	$(MAKE) acs

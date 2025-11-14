@@ -1,0 +1,2 @@
+images: quay.io/enterprisedb/postgresql:16.4
+namespace: edb-workshop-prod

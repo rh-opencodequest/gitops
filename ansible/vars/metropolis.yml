@@ -1,0 +1,12 @@
+#
+# Open Code Quest
+#
+opencodequest:
+  clusters:
+    - name: metropolis
+      users: [ "spider", "valkyri", "ironma" ,
+               "dreamg", "batman", "double" ,
+               "billyl" , "cynthia" , "atom" ,
+               "sonyab" , "coyote" , "jackbr" ,
+               "greatk" , "kelpie" , "renaro" ,
+               "rh1", "rh2", "rh3" ]

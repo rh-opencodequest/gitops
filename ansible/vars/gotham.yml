@@ -1,0 +1,12 @@
+#
+# Open Code Quest
+#
+opencodequest:
+  clusters:
+    - name: gotham
+      users: [ "reedri", "bethany", "babygr" ,
+               "rocket", "jonsno", "lightsp" ,
+               "captain" , "coleyo" , "mariah" ,
+               "niteow" , "morita" , "sprite" ,
+               "reaper" , "shatter" , "acegri" ,
+               "rh1", "rh2", "rh3" ]

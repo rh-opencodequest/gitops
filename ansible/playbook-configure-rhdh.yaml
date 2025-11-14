@@ -3,6 +3,7 @@
   gather_facts: no
   vars:
     ansible_connection: local
+    cluster: atlantis  # Default cluster, can be overridden with -e cluster=<name>
     gitlab_namespace: gitlab
     domain_name: "{{ gitlab_hostname | regex_replace('^[^.]+\\.', '') }}"
   tasks:
@@ -51,22 +52,93 @@
         name: backstage-developer-hub-app-config
       register: configmap_data
 
+    # - name: Create a file with configmap_data content
+    #   copy:
+    #     content: "{{ configmap_data.resources[0].data['app-config.yaml']}}"
+    #     dest: before_file.yaml 
+
     - name: Convert the ConfigMap data from YAML to a dict
       set_fact:
         configmap_data_dict: "{{ configmap_data.resources[0].data['app-config.yaml'] | from_yaml }}"
 
+    - name: Get existing catalog locations
+      set_fact:
+        existing_locations: "{{ configmap_data_dict.catalog.locations | default([]) }}"
+
+    - name: Define users catalog location
+      set_fact:
+        users_location:
+          rules:
+            - allow:
+              - Component
+              - System
+              - API
+              - Resource
+              - Location
+              - Template
+              - User
+              - Group
+          target: https://{{ gitlab_hostname }}/rhdh/users/-/blob/main/{{ cluster }}.yaml
+          type: url
+
+    - name: Check if users location already exists
+      set_fact:
+        users_location_exists: "{{ existing_locations | selectattr('target', 'equalto', users_location.target) | list | length > 0 }}"
+
     - name: Define new catalog locations
       set_fact:
-        new_catalog_locations:
-          - rules:
+        new_catalog_locations: "{{ new_catalog_locations | default([]) + [users_location] }}"
+      when: not users_location_exists | default(false)
+
+    - name: Define opencodequest templates location
+      set_fact:
+        opencodequest_location:
+          rules:
             - allow:
               - Template
-            target: https://{{ gitlab_hostname }}/rhdh/opencodequest-templates/-/blob/master/scaffolder-templates/opencodequest-templates.yaml
-            type: url
+          target: https://{{ gitlab_hostname }}/rhdh/opencodequest-templates/-/blob/master/scaffolder-templates/opencodequest-templates.yaml
+          type: url
+
+    - name: Check if opencodequest location already exists
+      set_fact:
+        opencodequest_location_exists: "{{ existing_locations | selectattr('target', 'equalto', opencodequest_location.target) | list | length > 0 }}"
+
+    - name: Add opencodequest location to new catalog locations
+      set_fact:
+        new_catalog_locations: "{{ new_catalog_locations | default([]) + [opencodequest_location] }}"
+      when: not opencodequest_location_exists | default(false)
 
     - name: Update catalog locations in the ConfigMap
       set_fact:
-        configmap_data_dict: "{{ configmap_data_dict | combine({'catalog': {'locations': new_catalog_locations}}, recursive=True) }}"
+        configmap_data_dict: "{{ configmap_data_dict | combine({'catalog': {'locations': new_catalog_locations}}, recursive=True , list_merge='prepend') }}"
+      when: new_catalog_locations | default([]) | length > 0
+
+    # - name: Print configmap_data_dict
+    #   debug:
+    #     msg: " {{ configmap_data_dict | to_nice_json }}"
+
+    # - name: Create a file with configmap_data_dict content
+    #   copy:
+    #     content: "{{ configmap_data_dict | to_nice_yaml }}"
+    #     dest: output_file.yaml  # Specify the desired output file path
+
+    # - name: Define new catalog rules
+    #   set_fact:
+    #     new_catalog_rules:
+    #       - rules:
+    #         - allow:
+    #           - Component
+    #           - System
+    #           - API
+    #           - Resource
+    #           - Location
+    #           - Template
+    #           - User
+    #           - Group
+
+    # - name: Update catalog rules in the ConfigMap
+    #   set_fact:
+    #     configmap_data_dict: "{{ configmap_data_dict | combine({'catalog': {'rules': new_catalog_rules}}, recursive=True) }}"
 
     - name: Update the ConfigMap with modified data
       kubernetes.core.k8s:
@@ -77,7 +149,7 @@
             name: backstage-developer-hub-app-config
             namespace: backstage
           data:
-            app-config.yaml: "{{ configmap_data_dict | to_yaml }}"
+            app-config.yaml: "{{ configmap_data_dict | to_nice_yaml }}"
       register: update_configmap_result
 
     - name: Force deployment of RHDH (remove pod)

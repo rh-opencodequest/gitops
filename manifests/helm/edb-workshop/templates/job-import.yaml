@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: import-job
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  backoffLimit: 100
+  template:
+    spec:
+      containers:
+      - name: import
+        command:
+          - /bin/bash
+          - '-c'
+          - |
+            set -x
+            sh /scripts/import.sh
+        image: {{ .Values.image }}
+        volumeMounts:
+          - mountPath: /scripts
+            name: importsql-sh
+          - mountPath: /sql/heroes.sql
+            name: heroes-sql
+            subPath: heroes.sql
+          - mountPath: /sql/villains.sql
+            name: villains-sql
+            subPath: villains.sql
+        env:
+          - name: POSTGRESQL_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: cluster-edb-prod-superuser
+                key: username
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: cluster-edb-prod-superuser
+                key: password
+      restartPolicy: Never
+      volumes:
+      - name: importsql-sh
+        configMap:
+          name: importsql-sh
+      - name: heroes-sql
+        configMap:
+          name: heroes-sql
+      - name: villains-sql
+        configMap:
+          name: villains-sql

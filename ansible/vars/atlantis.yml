@@ -1,0 +1,13 @@
+#
+# Open Code Quest
+#
+opencodequest:
+  clusters:
+    - name: atlantis
+      users: [ "rubeus", "johnwr", "howard" ,
+               "niteow2", "blackp", "moondra" , 
+               "captainam" , "saria" , "humanb" ,
+               "rachel" , "mercury" , "thepun" ,
+               "bishop" , "hogun" , "tempera",
+               "rh1", "rh2", "rh3" ]
+      # users: [ "rubeus", "johnwr", "howard" ]

@@ -1,0 +1,12 @@
+#
+# Open Code Quest
+#
+opencodequest:
+  clusters:
+    - name: central
+      users: [ "redgua", "oracle", "misango" ,
+               "penance", "hesh", "shockwa" ,
+               "blackl" , "adawon" , "wonder" ,
+               "newtsc" , "jonatha" , "ironsp" ,
+               "tigra" , "cloak" , "aquagir" ,
+               "rh1", "rh2", "rh3" ]

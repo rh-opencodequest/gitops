@@ -1,0 +1,246 @@
+- name: Configure Keycloak Users
+  hosts: localhost
+  vars:
+    cluster: atlantis  # Default cluster, can be overridden with -e cluster=<name>
+    keycloak_namespace: rhsso
+    keycloak_realm: openshift  # Default realm, can be overridden with -e keycloak_realm=<name>
+
+  tasks:
+    - name: Get Keycloak's Route
+      kubernetes.core.k8s_info:
+        api_version: route.openshift.io/v1
+        kind: Route
+        name: keycloak
+        namespace: '{{ keycloak_namespace }}'
+      register: keycloak_route
+      failed_when: keycloak_route.resources|length == 0
+      until: keycloak_route is succeeded
+      retries: 60
+      delay: 5
+
+    - set_fact:
+        keycloak_hostname: '{{ keycloak_route.resources[0].spec.host }}'
+        keycloak_url: 'https://{{ keycloak_route.resources[0].spec.host }}/auth'
+
+    - name: Retrieve Keycloak admin credentials
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: credential-rhsso-instance
+        namespace: '{{ keycloak_namespace }}'
+      register: keycloak_secret
+      failed_when: keycloak_secret.resources|length == 0
+      until: keycloak_secret is succeeded
+      retries: 60
+      delay: 5
+
+    - name: Decode Keycloak admin credentials
+      set_fact:
+        keycloak_admin_username: '{{ keycloak_secret.resources[0].data.ADMIN_USERNAME | b64decode }}'
+        keycloak_admin_password: '{{ keycloak_secret.resources[0].data.ADMIN_PASSWORD | b64decode }}'
+
+    - name: Get Keycloak admin access token
+      ansible.builtin.uri:
+        url: '{{ keycloak_url }}/realms/master/protocol/openid-connect/token'
+        method: POST
+        body_format: form-urlencoded
+        body:
+          grant_type: password
+          client_id: admin-cli
+          username: '{{ keycloak_admin_username }}'
+          password: '{{ keycloak_admin_password }}'
+        validate_certs: false
+        status_code: 200
+      register: keycloak_token_response
+      retries: 5
+      delay: 2
+      until: keycloak_token_response.status == 200
+
+    - set_fact:
+        keycloak_access_token: '{{ keycloak_token_response.json.access_token }}'
+
+    - name: Get authentication flows for realm
+      ansible.builtin.uri:
+        url: '{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/authentication/flows'
+        method: GET
+        headers:
+          Authorization: "Bearer {{ keycloak_access_token }}"
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: 200
+      register: auth_flows
+      retries: 3
+      delay: 2
+
+    - name: Debug - List available authentication flows
+      ansible.builtin.debug:
+        msg: "Available flow: {{ item.alias }}"
+      loop: '{{ auth_flows.json }}'
+      loop_control:
+        label: "{{ item.alias }}"
+
+    - name: Find First Broker Login flow alias
+      set_fact:
+        first_broker_login_flow: "{{ item }}"
+      loop: '{{ auth_flows.json }}'
+      when: item.alias | lower | regex_search('first.*broker.*login')
+      register: flow_search_result
+      failed_when: false
+      changed_when: false
+      loop_control:
+        label: "{{ item.alias }}"
+
+    - name: Extract First Broker Login flow from search results
+      set_fact:
+        first_broker_login_flow: "{{ flow_search_result.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts.first_broker_login_flow') | first | default({}) }}"
+      when: flow_search_result.results | selectattr('ansible_facts', 'defined') | list | length > 0
+
+    - name: Debug - First Broker Login flow found
+      ansible.builtin.debug:
+        msg: "Found First Broker Login flow: {{ first_broker_login_flow.alias | default('NOT FOUND') }}"
+      when: first_broker_login_flow.alias is defined
+
+    - name: Get First Broker Login flow executions
+      ansible.builtin.uri:
+        url: '{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/authentication/flows/{{ first_broker_login_flow.alias | urlencode }}/executions'
+        method: GET
+        headers:
+          Authorization: "Bearer {{ keycloak_access_token }}"
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: 200
+      register: first_broker_login_executions
+      retries: 3
+      delay: 2
+      when: first_broker_login_flow.alias is defined
+      ignore_errors: true
+
+    - name: Find Review profile execution
+      set_fact:
+        review_profile_execution: "{{ item }}"
+      loop: '{{ first_broker_login_executions.json }}'
+      when: 
+        - first_broker_login_executions.json is defined
+        - first_broker_login_executions.json | length > 0
+        - (item.displayName | default('') | lower | regex_search('review.*profile') or item.providerId | default('') == 'idp-review-profile')
+      register: review_profile_search
+      failed_when: false
+      changed_when: false
+
+    - name: Extract Review profile execution from search results
+      set_fact:
+        review_profile_execution: "{{ review_profile_search.results | selectattr('ansible_facts', 'defined') | map(attribute='ansible_facts.review_profile_execution') | first | default({}) }}"
+      when: review_profile_search.results | selectattr('ansible_facts', 'defined') | list | length > 0
+
+    - name: Prepare execution updates with full execution objects
+      set_fact:
+        updated_executions: "{{ updated_executions | default([]) + [item | combine({'requirement': 'DISABLED' if item.id == review_profile_execution.id else item.requirement})] }}"
+      loop: '{{ first_broker_login_executions.json }}'
+      when: 
+        - review_profile_execution.id is defined
+        - first_broker_login_executions.json is defined
+
+    - name: Debug - Show Review profile execution before update
+      ansible.builtin.debug:
+        msg: "Review Profile execution requirement before update: {{ item.requirement }}"
+      loop: '{{ updated_executions | default([]) }}'
+      when: 
+        - updated_executions is defined
+        - item.id == review_profile_execution.id
+      loop_control:
+        label: "{{ item.displayName }}"
+
+    - name: Update First Broker Login flow executions with disabled Review profile
+      ansible.builtin.uri:
+        url: '{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/authentication/flows/{{ first_broker_login_flow.alias | urlencode }}/executions'
+        method: PUT
+        body_format: json
+        body: '{{ updated_executions }}'
+        headers:
+          Authorization: "Bearer {{ keycloak_access_token }}"
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: [200, 204, 400]
+        return_content: yes
+      register: update_execution_result
+      when: 
+        - review_profile_execution.id is defined
+        - updated_executions is defined
+        - updated_executions | length > 0
+      retries: 3
+      delay: 2
+      ignore_errors: true
+
+    - name: Debug - Show API response
+      ansible.builtin.debug:
+        msg: "Update response status: {{ update_execution_result.status | default('N/A') }}, Response: {{ update_execution_result.json | default('No JSON') }}"
+      when: update_execution_result.status is defined
+
+    - name: Verify Review profile execution requirement is DISABLED
+      ansible.builtin.uri:
+        url: '{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/authentication/flows/{{ first_broker_login_flow.alias | urlencode }}/executions'
+        method: GET
+        headers:
+          Authorization: "Bearer {{ keycloak_access_token }}"
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: 200
+      register: verify_executions
+      when: 
+        - review_profile_execution.id is defined
+        - update_execution_result.status | default(0) in [200, 204]
+
+    - name: Display Review profile execution status
+      ansible.builtin.debug:
+        msg: "Review Profile execution requirement: {{ item.requirement }}"
+      loop: '{{ verify_executions.json | default([]) }}'
+      when: 
+        - verify_executions.json is defined
+        - item.id == review_profile_execution.id
+      loop_control:
+        label: "{{ item.displayName }}"
+
+    - name: Load cluster vars
+      include_vars:
+        file: "vars/{{ cluster }}.yml"
+        name: cluster_vars
+
+    - name: Extract cluster users
+      set_fact:
+        cluster_users: '{{ cluster_vars.opencodequest.clusters | selectattr("name", "equalto", cluster) | map(attribute="users") | first }}'
+
+    - name: Create Keycloak users from cluster vars
+      ansible.builtin.uri:
+        url: '{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/users'
+        method: POST
+        body_format: json
+        body:
+          username: '{{ item }}'
+          email: '{{ item }}@opentlc.com'
+          emailVerified: true
+          enabled: true
+          firstName: '{{ item | capitalize }}'
+          lastName: 'User'
+          credentials:
+            - type: password
+              value: '{{ item[:3] }}2025!!'
+              temporary: false
+        headers:
+          Authorization: "Bearer {{ keycloak_access_token }}"
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: [201, 409]
+      register: r_keycloak_user
+      retries: 3
+      delay: 2
+      until: r_keycloak_user.status in [201, 409]
+      loop: '{{ cluster_users }}'
+      ignore_errors: true
+
+    - name: Display user creation results
+      ansible.builtin.debug:
+        msg: "User {{ item.item }}: {{ 'Created' if item.status == 201 else 'Already exists' if item.status == 409 else 'Failed' }}"
+      loop: '{{ r_keycloak_user.results | default([]) }}'
+      loop_control:
+        label: "{{ item.item }}"
+

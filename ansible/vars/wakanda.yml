@@ -1,0 +1,12 @@
+#
+# Open Code Quest
+#
+opencodequest:
+  clusters:
+    - name: wakanda
+      users: [ "harriso", "wildcat", "ericaj" ,
+               "blackw", "spring", "doctor" ,
+               "echo" , "sergean" , "turanga" ,
+               "alinap" , "revali" , "delphyn" ,
+               "alfred" , "fordpi" , "bigbos" ,
+               "rh1", "rh2", "rh3" ]
