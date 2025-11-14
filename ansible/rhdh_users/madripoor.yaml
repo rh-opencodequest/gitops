@@ -425,3 +425,77 @@ spec:
     picture: https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg?background=%23fff
   memberOf: [volstag]
 
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: rh1
+  description: rh1 group
+spec:
+  type: team
+  profile:
+    # Intentional no displayName for testing
+    email: rh1@opentlc.com
+    picture: https://avatars.dicebear.com/api/identicon/team-a@example.com.svg?background=%23fff&margin=25
+  parent: rhdh
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: rh1
+spec:
+  profile:
+    email: rh1@opentlc.com
+    picture: https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg?background=%23fff
+  memberOf: [rh1]
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: rh2
+  description: rh2 group
+spec:
+  type: team
+  profile:
+    # Intentional no displayName for testing
+    email: rh2@opentlc.com
+    picture: https://avatars.dicebear.com/api/identicon/team-a@example.com.svg?background=%23fff&margin=25
+  parent: rhdh
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: rh2
+spec:
+  profile:
+    email: rh1@opentlc.com
+    picture: https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg?background=%23fff
+  memberOf: [rh2]
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: rh3
+  description: rh3 group
+spec:
+  type: team
+  profile:
+    # Intentional no displayName for testing
+    email: rh3@opentlc.com
+    picture: https://avatars.dicebear.com/api/identicon/team-a@example.com.svg?background=%23fff&margin=25
+  parent: rhdh
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: rh3
+spec:
+  profile:
+    email: rh3@opentlc.com
+    picture: https://avatars.dicebear.com/api/avataaars/breanna-davison@example.com.svg?background=%23fff
+  memberOf: [rh3]
