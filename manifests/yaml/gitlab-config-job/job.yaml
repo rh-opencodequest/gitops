@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: gitlab-config-job
-  namespace: openshift-gitops
+  namespace: gitlab
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:

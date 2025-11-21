@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: gitlab-config-job-config
-  namespace: openshift-gitops
+  namespace: gitlab
 data:
   CLUSTER: "atlantis"  # Change this to configure different clusters: atlantis, central, gotham, madripoor, metropolis, wakanda
   GITLAB_NAMESPACE: "gitlab"
