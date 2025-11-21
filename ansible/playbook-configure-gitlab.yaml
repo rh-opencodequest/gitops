@@ -7,7 +7,7 @@
     domain_name: "{{ gitlab_hostname | regex_replace('^[^.]+\\.', '') }}"
     ocp_uid: "{{ domain_name.split('.')[2] }}"
     gh_source_repo: https://github.com/rh-trucathon/rhdh-templates
-    gl_dest_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/rhdh/opencodequest-templates
+    gl_dest_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/opencodequest/templates
     repo_local_path: /tmp/gh
 
     # rhdh_gitops_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/gitops/janus-idp-gitops
