@@ -10,10 +10,10 @@
     gl_dest_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/rhdh/opencodequest-templates
     repo_local_path: /tmp/gh
 
-    rhdh_gitops_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/gitops/janus-idp-gitops
-    rhdh_gitops_repo_local_path: /tmp/janus-idp-gitops
-    rhdh_users_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/rhdh/users
-    rhdh_users_repo_local_path: /tmp/rhdh-users
+    # rhdh_gitops_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/gitops/janus-idp-gitops
+    # rhdh_gitops_repo_local_path: /tmp/janus-idp-gitops
+    # rhdh_users_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/rhdh/users
+    # rhdh_users_repo_local_path: /tmp/rhdh-users
 
   tasks:
     - name: Get GitLab's Route
@@ -103,80 +103,172 @@
       ignore_errors: true
       when: users_to_create | default([]) | length > 0
 
-    - name: Get GitLab rhdh group
+    - name: Get user IDs for all cluster users
       ansible.builtin.uri:
-        url: '{{ gitlab_api }}/groups/rhdh'
+        url: '{{ gitlab_api }}/users?username={{ item }}'
         method: GET
         headers:
           PRIVATE-TOKEN: '{{ root_token }}'
         validate_certs: false
         status_code: 200
-      register: r_group
+      register: r_get_user_ids
+      retries: 3
+      delay: 2
+      loop: '{{ cluster_users }}'
+      ignore_errors: true
 
-    - name: Map cluster name to rhdh_users filename
+    - name: Extract user IDs
       set_fact:
-        rhdh_users_filename: "{{ cluster }}.yaml"
+        user_ids: >-
+          {{
+            user_ids | default([]) +
+            ([item.json | first | default({}) | combine({'username': item.item})] if
+             (item.json | default([]) | length > 0)
+             else [])
+          }}
+      loop: '{{ r_get_user_ids.results | default([]) }}'
+      when: item.json | default([]) | length > 0
 
-    - name: Check if rhdh/users repo exists
+    - name: Check if opencodequest group exists
       ansible.builtin.uri:
-        url: '{{ gitlab_api }}/projects/rhdh%2Fusers'
+        url: '{{ gitlab_api }}/groups/opencodequest'
         method: GET
         headers:
           PRIVATE-TOKEN: '{{ root_token }}'
         validate_certs: false
         status_code: [200, 404]
-      register: r_check_users_repo
+      register: r_opencodequest_group
+      ignore_errors: true
 
-    - name: Create rhdh/users repo if it doesn't exist
+    - name: Create opencodequest group if it doesn't exist
       ansible.builtin.uri:
-        url: '{{ gitlab_api }}/projects'
+        url: '{{ gitlab_api }}/groups'
         method: POST
         body_format: form-urlencoded
         body:
-          name: users
-          namespace_id: '{{ r_group.json.id }}'
+          name: opencodequest
+          path: opencodequest
           visibility: public
         headers:
           PRIVATE-TOKEN: '{{ root_token }}'
         validate_certs: false
         status_code: [201, 400, 422]
-      register: r_users_repo
-      when: r_check_users_repo.status == 404
-
-    - name: Clone rhdh/users repo
-      ansible.builtin.git:
-        repo: "{{ rhdh_users_repo }}"
-        dest: "{{ rhdh_users_repo_local_path }}"
-        clone: yes
-        update: yes
-        force: yes
+      register: r_create_opencodequest_group
+      when: r_opencodequest_group.status == 404
       ignore_errors: true
 
-    - name: Copy rhdh_users file to repository
-      ansible.builtin.copy:
-        src: "rhdh_users/{{ rhdh_users_filename }}"
-        dest: "{{ rhdh_users_repo_local_path }}/{{ rhdh_users_filename }}"
-        remote_src: false
+    - name: Get opencodequest group details
+      ansible.builtin.uri:
+        url: '{{ gitlab_api }}/groups/opencodequest'
+        method: GET
+        headers:
+          PRIVATE-TOKEN: '{{ root_token }}'
+        validate_certs: false
+        status_code: 200
+      register: r_opencodequest_group
+      retries: 3
+      delay: 2
 
-    - name: Git config for rhdh/users repo
-      ansible.builtin.shell: |
-          git config credential.helper store
-          git config user.name "Administrator"
-          git config user.email "root@opentlc.com"
-      args:
-        chdir: "{{ rhdh_users_repo_local_path }}"
+    - name: Set opencodequest group ID
+      set_fact:
+        opencodequest_group_id: '{{ r_opencodequest_group.json.id }}'
 
-    - name: Commit and push rhdh_users file
-      ansible.builtin.shell:
-        cmd: |
-          git remote set-url origin {{ rhdh_users_repo }}
-          git add {{ rhdh_users_filename }}
-          git commit -m "feat: Add {{ cluster }} users" || true
-          git push -u origin main || git push -u origin master || true
-          rm -rf {{ rhdh_users_repo_local_path }}
-      args:
-        chdir: "{{ rhdh_users_repo_local_path }}"
+    - name: Add users to opencodequest group
+      ansible.builtin.uri:
+        url: '{{ gitlab_api }}/groups/{{ opencodequest_group_id }}/members'
+        method: POST
+        body_format: json
+        body:
+          user_id: '{{ item.id }}'
+          access_level: 30
+        headers:
+          PRIVATE-TOKEN: '{{ root_token }}'
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: [201, 409]
+      register: r_add_member
+      retries: 3
+      delay: 2
+      loop: '{{ user_ids | default([]) }}'
       ignore_errors: true
+      when: 
+        - user_ids | default([]) | length > 0
+        - item.id is defined
+
+    # - name: Get GitLab rhdh group
+    #   ansible.builtin.uri:
+    #     url: '{{ gitlab_api }}/groups/rhdh'
+    #     method: GET
+    #     headers:
+    #       PRIVATE-TOKEN: '{{ root_token }}'
+    #     validate_certs: false
+    #     status_code: 200
+    #   register: r_group
+
+    # - name: Map cluster name to rhdh_users filename
+    #   set_fact:
+    #     rhdh_users_filename: "{{ cluster }}.yaml"
+
+    # - name: Check if rhdh/users repo exists
+    #   ansible.builtin.uri:
+    #     url: '{{ gitlab_api }}/projects/rhdh%2Fusers'
+    #     method: GET
+    #     headers:
+    #       PRIVATE-TOKEN: '{{ root_token }}'
+    #     validate_certs: false
+    #     status_code: [200, 404]
+    #   register: r_check_users_repo
+
+    # - name: Create rhdh/users repo if it doesn't exist
+    #   ansible.builtin.uri:
+    #     url: '{{ gitlab_api }}/projects'
+    #     method: POST
+    #     body_format: form-urlencoded
+    #     body:
+    #       name: users
+    #       namespace_id: '{{ r_group.json.id }}'
+    #       visibility: public
+    #     headers:
+    #       PRIVATE-TOKEN: '{{ root_token }}'
+    #     validate_certs: false
+    #     status_code: [201, 400, 422]
+    #   register: r_users_repo
+    #   when: r_check_users_repo.status == 404
+
+    # - name: Clone rhdh/users repo
+    #   ansible.builtin.git:
+    #     repo: "{{ rhdh_users_repo }}"
+    #     dest: "{{ rhdh_users_repo_local_path }}"
+    #     clone: yes
+    #     update: yes
+    #     force: yes
+    #   ignore_errors: true
+
+    # - name: Copy rhdh_users file to repository
+    #   ansible.builtin.copy:
+    #     src: "rhdh_users/{{ rhdh_users_filename }}"
+    #     dest: "{{ rhdh_users_repo_local_path }}/{{ rhdh_users_filename }}"
+    #     remote_src: false
+
+    # - name: Git config for rhdh/users repo
+    #   ansible.builtin.shell: |
+    #       git config credential.helper store
+    #       git config user.name "Administrator"
+    #       git config user.email "root@opentlc.com"
+    #   args:
+    #     chdir: "{{ rhdh_users_repo_local_path }}"
+
+    # - name: Commit and push rhdh_users file
+    #   ansible.builtin.shell:
+    #     cmd: |
+    #       git remote set-url origin {{ rhdh_users_repo }}
+    #       git add {{ rhdh_users_filename }}
+    #       git commit -m "feat: Add {{ cluster }} users" || true
+    #       git push -u origin main || git push -u origin master || true
+    #       rm -rf {{ rhdh_users_repo_local_path }}
+    #   args:
+    #     chdir: "{{ rhdh_users_repo_local_path }}"
+    #   ignore_errors: true
 
     - name: Remove branch protection
       ansible.builtin.uri:
@@ -192,7 +284,7 @@
 
     - name: Delete old OpenCodeQuest templates
       ansible.builtin.uri:
-        url: '{{ gitlab_api }}/projects/rhdh%2Fopencodequest-templates'
+        url: '{{ gitlab_api }}/projects/opencodequest%2Ftemplates'
         method: DELETE
         body_format: form-urlencoded
         body:
@@ -213,7 +305,7 @@
       ansible.builtin.replace:
         path: "{{ item }}"
         regexp: 'github.com/rh-trucathon/rhdh-templates/blob/main/'
-        replace: '{{ gitlab_hostname }}/rhdh/opencodequest-templates/-/blob/master/'
+        replace: '{{ gitlab_hostname }}/opencodequest/templates/-/blob/master/'
         backup: no
       loop:
         - "{{ repo_local_path }}/scaffolder-templates/opencodequest-templates.yaml"
@@ -266,7 +358,7 @@
 
     - name: Set opencodequest-templates repository to public
       ansible.builtin.uri:
-        url: '{{ gitlab_api }}/projects/rhdh%2Fopencodequest-templates'
+        url: '{{ gitlab_api }}/projects/opencodequest%2Ftemplates'
         method: PUT
         body_format: form-urlencoded
         body:
