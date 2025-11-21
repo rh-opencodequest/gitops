@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-config-job
+  namespace: tssc-keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      serviceAccountName: keycloak-config-job-runner
+      restartPolicy: Never
+      containers:
+      - name: keycloak-config
+        image: quay.io/agnosticd/ee-multicloud:latest
+        command:
+          - /bin/bash
+          - '-c'
+          - |
+            set -e
+            set -x
+            
+            # Clone the gitops repo to get playbooks and vars
+            echo "Cloning gitops repository..."
+            git clone --depth 1 --branch ${GITOPS_BRANCH:-main} ${GITOPS_REPO_URL} /tmp/gitops || true
+            
+            # Change to the ansible directory
+            cd /tmp/gitops/ansible
+            
+            # Run the ansible playbook
+            echo "Running ansible playbook for cluster: ${CLUSTER}"
+            ansible-playbook -i localhost playbook-configure-keycloak.yaml \
+              -e cluster=${CLUSTER} \
+              -e keycloak_namespace=${KEYCLOAK_NAMESPACE:-tssc-keycloak} \
+              -e keycloak_realm=${KEYCLOAK_REALM:-trusted-artifact-signer} \
+              -e keycloak_admin_secret_name=${KEYCLOAK_ADMIN_SECRET_NAME:-keycloak-initial-admin}
+            
+            echo "Keycloak configuration completed successfully"
+        envFrom:
+        - configMapRef:
+            name: keycloak-config-job-config
+

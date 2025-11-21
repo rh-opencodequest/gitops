@@ -1,11 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gitlab-config-job-config
-  namespace: gitlab
+  name: keycloak-config-job-config
+  namespace: tssc-keycloak
 data:
   CLUSTER: "atlantis"  # Change this to configure different clusters: atlantis, central, gotham, madripoor, metropolis, wakanda
-  GITLAB_NAMESPACE: "gitlab"
+  KEYCLOAK_NAMESPACE: "tssc-keycloak"
+  KEYCLOAK_REALM: "trusted-artifact-signer"
+  KEYCLOAK_ADMIN_SECRET_NAME: "keycloak-initial-admin"
   GITOPS_REPO_URL: "https://github.com/rh-trucathon/gitops.git"
   GITOPS_BRANCH: "rhads-demo"
 

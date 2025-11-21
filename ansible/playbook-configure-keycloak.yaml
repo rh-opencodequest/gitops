@@ -2,8 +2,9 @@
   hosts: localhost
   vars:
     cluster: atlantis  # Default cluster, can be overridden with -e cluster=<name>
-    keycloak_namespace: rhsso
-    keycloak_realm: openshift  # Default realm, can be overridden with -e keycloak_realm=<name>
+    keycloak_namespace: tssc-keycloak
+    keycloak_realm: trusted-artifact-signer  # Default realm, can be overridden with -e keycloak_realm=<name>
+    keycloak_admin_secret_name: keycloak-initial-admin
 
   tasks:
     - name: Get Keycloak's Route
@@ -20,13 +21,13 @@
 
     - set_fact:
         keycloak_hostname: '{{ keycloak_route.resources[0].spec.host }}'
-        keycloak_url: 'https://{{ keycloak_route.resources[0].spec.host }}/auth'
+        keycloak_url: 'https://{{ keycloak_route.resources[0].spec.host }}'
 
     - name: Retrieve Keycloak admin credentials
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Secret
-        name: credential-rhsso-instance
+        name: '{{ keycloak_admin_secret_name }}'
         namespace: '{{ keycloak_namespace }}'
       register: keycloak_secret
       failed_when: keycloak_secret.resources|length == 0
@@ -36,8 +37,8 @@
 
     - name: Decode Keycloak admin credentials
       set_fact:
-        keycloak_admin_username: '{{ keycloak_secret.resources[0].data.ADMIN_USERNAME | b64decode }}'
-        keycloak_admin_password: '{{ keycloak_secret.resources[0].data.ADMIN_PASSWORD | b64decode }}'
+        keycloak_admin_username: '{{ keycloak_secret.resources[0].data.username | b64decode }}'
+        keycloak_admin_password: '{{ keycloak_secret.resources[0].data.password | b64decode }}'
 
     - name: Get Keycloak admin access token
       ansible.builtin.uri:
