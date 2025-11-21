@@ -334,6 +334,22 @@
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-postgresql/template.yaml"
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-with-spring-postgresql/template.yaml"
 
+    - name: Find all files in scaffolder-templates directory
+      ansible.builtin.find:
+        paths: "{{ repo_local_path }}/scaffolder-templates"
+        patterns: "*.yaml"
+        recurse: true
+      register: scaffolder_template_files
+
+    - name: Replace janus-argocd namespace with tssc-argocd
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: 'namespace: janus-argocd'
+        replace: 'namespace: tssc-argocd'
+        backup: no
+      loop: "{{ scaffolder_template_files.files }}"
+      when: scaffolder_template_files.files | length > 0
+
     - name: git config
       ansible.builtin.shell: |
           rm -rf .git
