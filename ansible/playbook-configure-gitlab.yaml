@@ -350,6 +350,15 @@
       loop: "{{ scaffolder_template_files.files }}"
       when: scaffolder_template_files.files | length > 0
 
+    - name: Replace appproject janus with default
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: 'project: janus'
+        replace: 'project: default'
+        backup: no
+      loop: "{{ scaffolder_template_files.files }}"
+      when: scaffolder_template_files.files | length > 0
+
     - name: git config
       ansible.builtin.shell: |
           rm -rf .git
