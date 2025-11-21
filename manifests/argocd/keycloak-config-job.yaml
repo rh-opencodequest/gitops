@@ -10,7 +10,7 @@ spec:
   source:
     path: manifests/yaml/keycloak-config-job
     repoURL: 'https://github.com/rh-trucathon/gitops.git'
-    targetRevision: main
+    targetRevision: rhads-demo
   syncPolicy:
     automated:
       prune: true
