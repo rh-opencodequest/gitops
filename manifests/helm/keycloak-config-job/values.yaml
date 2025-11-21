@@ -1,0 +1,16 @@
+# Default values for keycloak-config-job
+# Cluster name - change this to configure different clusters
+# Options: atlantis, central, gotham, madripoor, metropolis, wakanda
+cluster: atlantis
+
+namespace: tssc-keycloak
+
+keycloak:
+  namespace: tssc-keycloak
+  realm: trusted-artifact-signer
+  adminSecretName: keycloak-initial-admin
+
+gitops:
+  repoUrl: "https://github.com/rh-trucathon/gitops.git"
+  branch: "rhads-demo"
+

@@ -8,9 +8,14 @@ spec:
     server: 'https://kubernetes.default.svc'
   project: default
   source:
-    path: manifests/yaml/gitlab-config-job
     repoURL: 'https://github.com/rh-trucathon/gitops.git'
-    targetRevision: main
+    targetRevision: rhads-demo
+    path: manifests/helm/gitlab-config-job
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        cluster: atlantis
   syncPolicy:
     automated:
       prune: true
