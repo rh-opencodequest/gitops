@@ -345,7 +345,7 @@
       ansible.builtin.replace:
         path: "{{ item.path }}"
         regexp: 'namespace: janus-argocd'
-        replace: 'namespace: tssc-argocd'
+        replace: 'namespace: tssc-gitops'
         backup: no
       loop: "{{ scaffolder_template_files.files }}"
       when: scaffolder_template_files.files | length > 0
