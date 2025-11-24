@@ -337,8 +337,9 @@
     - name: Find all files in scaffolder-templates directory
       ansible.builtin.find:
         paths: "{{ repo_local_path }}/scaffolder-templates"
-        patterns: "*.yaml"
-        excludes: "skeleton"
+        patterns: 
+         - "*/template.yaml"
+         - "*/manifests/argocd/*.yaml"
         recurse: true
       register: scaffolder_template_files
 
