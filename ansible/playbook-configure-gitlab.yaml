@@ -334,14 +334,29 @@
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-postgresql/template.yaml"
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-with-spring-postgresql/template.yaml"
 
-    - name: Find all files in scaffolder-templates directory
+    - name: Find all YAML files in scaffolder-templates
       ansible.builtin.find:
         paths: "{{ repo_local_path }}/scaffolder-templates"
-        patterns:
-          - "**/manifests/**/*.yaml"
-          - "**/template.yaml"
+        patterns: "*.yaml"
         recurse: true
-      register: scaffolder_template_files
+        file_type: file
+      register: all_yaml_files
+
+    - name: Filter files to only manifests and template.yaml
+      set_fact:
+        scaffolder_template_files:
+          files: >-
+            {{
+              (all_yaml_files.files | default([]) |
+               selectattr('path', 'match', '.*/template\\.yaml$') | list) +
+              (all_yaml_files.files | default([]) |
+               selectattr('path', 'match', '.*/manifests/.*\\.yaml$') | list)
+            }}
+
+    - name: Debug - Show found files
+      ansible.builtin.debug:
+        msg: "Found {{ scaffolder_template_files.files | length }} files: {{ scaffolder_template_files.files | map(attribute='path') | list }}"
+      when: scaffolder_template_files.files | length > 0
 
     - name: Replace janus-argocd namespace with tssc-argocd
       ansible.builtin.replace:
