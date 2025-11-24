@@ -338,8 +338,8 @@
       ansible.builtin.find:
         paths: "{{ repo_local_path }}/scaffolder-templates"
         patterns: 
-         - "*/template.yaml"
-         - "*/manifests/argocd/*.yaml"
+         - "template.yaml"
+         - "*-argocd-*.yaml"
         recurse: true
       register: scaffolder_template_files
 
