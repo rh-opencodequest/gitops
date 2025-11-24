@@ -334,6 +334,18 @@
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-postgresql/template.yaml"
         - "{{ repo_local_path }}/scaffolder-templates/quarkus-with-spring-postgresql/template.yaml"
 
+    - name: Update argoInstance
+      ansible.builtin.replace:
+        path: "{{ item }}"
+        regexp: 'argoInstance: main'
+        replace: 'argoInstance: default'
+        backup: no
+      loop:
+        - "{{ repo_local_path }}/scaffolder-templates/fight-ui/template.yaml"
+        - "{{ repo_local_path }}/scaffolder-templates/quarkus-ai/template.yaml"
+        - "{{ repo_local_path }}/scaffolder-templates/quarkus-postgresql/template.yaml"
+        - "{{ repo_local_path }}/scaffolder-templates/quarkus-with-spring-postgresql/template.yaml"
+
     - name: Find all files in scaffolder-templates directory
       ansible.builtin.find:
         paths: "{{ repo_local_path }}/scaffolder-templates"
