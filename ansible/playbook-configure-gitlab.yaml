@@ -195,15 +195,41 @@
         - user_ids | default([]) | length > 0
         - item.id is defined
 
-    # - name: Get GitLab rhdh group
-    #   ansible.builtin.uri:
-    #     url: '{{ gitlab_api }}/groups/rhdh'
-    #     method: GET
-    #     headers:
-    #       PRIVATE-TOKEN: '{{ root_token }}'
-    #     validate_certs: false
-    #     status_code: 200
-    #   register: r_group
+    - name: Get GitLab rhdh group
+      ansible.builtin.uri:
+        url: '{{ gitlab_api }}/groups/rhdh'
+        method: GET
+        headers:
+          PRIVATE-TOKEN: '{{ root_token }}'
+        validate_certs: false
+        status_code: 200
+      register: r_group
+
+    - name: Set rhdh group ID
+      set_fact:
+        rhdh_group_id: '{{ r_group.json.id }}'
+
+    - name: Add users to rhdh group
+      ansible.builtin.uri:
+        url: '{{ gitlab_api }}/groups/{{ rhdh_group_id }}/members'
+        method: POST
+        body_format: json
+        body:
+          user_id: '{{ item.id }}'
+          access_level: 30
+        headers:
+          PRIVATE-TOKEN: '{{ root_token }}'
+          Content-Type: "application/json"
+        validate_certs: false
+        status_code: [201, 409]
+      register: r_add_rhdh_member
+      retries: 3
+      delay: 2
+      loop: '{{ user_ids | default([]) }}'
+      ignore_errors: true
+      when: 
+        - user_ids | default([]) | length > 0
+        - item.id is defined
 
     # - name: Map cluster name to rhdh_users filename
     #   set_fact:
