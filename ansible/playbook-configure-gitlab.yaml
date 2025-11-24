@@ -337,7 +337,9 @@
     - name: Find all files in scaffolder-templates directory
       ansible.builtin.find:
         paths: "{{ repo_local_path }}/scaffolder-templates"
-        patterns: "*.yaml"
+        patterns:
+          - "**/manifests/**/*.yaml"
+          - "**/template.yaml"
         recurse: true
       register: scaffolder_template_files
 
@@ -362,7 +364,7 @@
     - name: git config
       ansible.builtin.shell: |
           rm -rf .git
-          git init --initial-branch=main
+          git init --initial-branch=master
           git config credential.helper store
           git config user.name "Administrator"
           git config user.email "root@opentlc.com"
@@ -373,23 +375,13 @@
     - name: git push
       ansible.builtin.shell:
         cmd: | 
-          set -e
-          set -x
-          git remote remove origin || true
           git remote add origin {{ gl_dest_repo }}
           git add .
-          git commit -m "Initial commit" || git commit --allow-empty -m "Initial commit"
-          git push -u origin main || git push -u origin master || true
+          git commit -m "Initial commit"
+          git push -u origin master
           rm -rf {{ repo_local_path }}
       args:
         chdir: "{{ repo_local_path }}"
-      register: git_push_result
-      failed_when: false
-
-    - name: Display git push result
-      ansible.builtin.debug:
-        msg: "Git push result: {{ git_push_result.stdout_lines | default([]) }}"
-      when: git_push_result is defined
 
     - name: Set opencodequest-templates repository to public
       ansible.builtin.uri:
