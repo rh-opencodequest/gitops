@@ -1,0 +1,7 @@
+apiVersion: v2
+name: keycloak-config-job
+description: Helm chart for Keycloak configuration job
+type: application
+version: 0.1.0
+appVersion: "1.0"
+

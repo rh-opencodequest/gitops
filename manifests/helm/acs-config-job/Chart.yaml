@@ -1,0 +1,7 @@
+apiVersion: v2
+name: acs-config-job
+description: Helm chart for ACS configuration job
+type: application
+version: 0.1.0
+appVersion: "1.0"
+

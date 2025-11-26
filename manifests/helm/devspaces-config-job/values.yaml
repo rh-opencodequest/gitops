@@ -1,0 +1,7 @@
+# Default values for devspaces-config-job
+namespace: openshift-devspaces
+
+gitops:
+  repoUrl: "https://github.com/rh-trucathon/gitops.git"
+  branch: "main"
+

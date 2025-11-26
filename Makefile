@@ -20,8 +20,6 @@ rhdh:
 	ansible-playbook -e cluster=$(CLUSTER) ansible/playbook-configure-rhdh.yaml
 
 acs: 
-	oc patch Central stackrox-central-services --patch '{"spec":{"scannerV4":{"scannerComponent": "Enabled"}}}' -n stackrox --type merge
-	oc patch SecuredCluster stackrox-secured-cluster-services --patch '{"spec":{"scannerV4":{"scannerComponent": "AutoSense"}}}' -n stackrox --type merge
 	ansible-playbook ansible/playbook-configure-acs.yaml
 
 all: edb usermonitoring devspaces gitlab keycloak rhdh acs
@@ -74,3 +72,58 @@ wakanda:
 	$(MAKE) keycloak CLUSTER=wakanda
 	$(MAKE) rhdh CLUSTER=wakanda
 	$(MAKE) acs
+
+# ArgoCD Application targets - create GitOps applications for each cluster
+gitops-atlantis:
+	oc apply -f manifests/argocd/edb.yaml
+	oc apply -f manifests/argocd/edb-workshop-prod.yaml
+	oc apply -f manifests/argocd/acs-config-job.yaml
+	oc apply -f manifests/argocd/devspaces-config-job.yaml
+	oc apply -f manifests/argocd/gitlab-config-job-atlantis.yaml
+	oc apply -f manifests/argocd/keycloak-config-job-atlantis.yaml
+	oc apply -f manifests/argocd/rhdh-config-job-atlantis.yaml
+
+gitops-central:
+	oc apply -f manifests/argocd/edb.yaml
+	oc apply -f manifests/argocd/edb-workshop-prod.yaml
+	oc apply -f manifests/argocd/acs-config-job.yaml
+	oc apply -f manifests/argocd/devspaces-config-job.yaml
+	oc apply -f manifests/argocd/gitlab-config-job-central.yaml
+	oc apply -f manifests/argocd/keycloak-config-job-central.yaml
+	oc apply -f manifests/argocd/rhdh-config-job-central.yaml
+
+gitops-gotham:
+	oc apply -f manifests/argocd/edb.yaml
+	oc apply -f manifests/argocd/edb-workshop-prod.yaml
+	oc apply -f manifests/argocd/acs-config-job.yaml
+	oc apply -f manifests/argocd/devspaces-config-job.yaml
+	oc apply -f manifests/argocd/gitlab-config-job-gotham.yaml
+	oc apply -f manifests/argocd/keycloak-config-job-gotham.yaml
+	oc apply -f manifests/argocd/rhdh-config-job-gotham.yaml
+
+gitops-madripoor:
+	oc apply -f manifests/argocd/edb.yaml
+	oc apply -f manifests/argocd/edb-workshop-prod.yaml
+	oc apply -f manifests/argocd/acs-config-job.yaml
+	oc apply -f manifests/argocd/devspaces-config-job.yaml
+	oc apply -f manifests/argocd/gitlab-config-job-madripoor.yaml
+	oc apply -f manifests/argocd/keycloak-config-job-madripoor.yaml
+	oc apply -f manifests/argocd/rhdh-config-job-madripoor.yaml
+
+gitops-metropolis:
+	oc apply -f manifests/argocd/edb.yaml
+	oc apply -f manifests/argocd/edb-workshop-prod.yaml
+	oc apply -f manifests/argocd/acs-config-job.yaml
+	oc apply -f manifests/argocd/devspaces-config-job.yaml
+	oc apply -f manifests/argocd/gitlab-config-job-metropolis.yaml
+	oc apply -f manifests/argocd/keycloak-config-job-metropolis.yaml
+	oc apply -f manifests/argocd/rhdh-config-job-metropolis.yaml
+
+gitops-wakanda:
+	oc apply -f manifests/argocd/edb.yaml
+	oc apply -f manifests/argocd/edb-workshop-prod.yaml
+	oc apply -f manifests/argocd/acs-config-job.yaml
+	oc apply -f manifests/argocd/devspaces-config-job.yaml
+	oc apply -f manifests/argocd/gitlab-config-job-wakanda.yaml
+	oc apply -f manifests/argocd/keycloak-config-job-wakanda.yaml
+	oc apply -f manifests/argocd/rhdh-config-job-wakanda.yaml

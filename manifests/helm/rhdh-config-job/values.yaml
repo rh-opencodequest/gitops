@@ -1,0 +1,14 @@
+# Default values for rhdh-config-job
+# Cluster name - change this to configure different clusters
+# Options: atlantis, central, gotham, madripoor, metropolis, wakanda
+cluster: atlantis
+
+namespace: backstage
+
+gitlab:
+  namespace: gitlab
+
+gitops:
+  repoUrl: "https://github.com/rh-trucathon/gitops.git"
+  branch: "main"
+

@@ -1,16 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: gitlab-config
+  name: rhdh-config-wakanda
   namespace: openshift-gitops
 spec:
   destination:
     server: 'https://kubernetes.default.svc'
   project: default
   source:
-    path: manifests/yaml/gitlab-config-job
     repoURL: 'https://github.com/rh-trucathon/gitops.git'
     targetRevision: main
+    path: manifests/helm/rhdh-config-job
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        cluster: wakanda
   syncPolicy:
     automated:
       prune: true
@@ -25,4 +30,3 @@ spec:
       - CreateNamespace=true
       - RespectIgnoreDifferences=true
       - ApplyOutOfSyncOnly=true
-

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: acs-config-job
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      serviceAccountName: acs-config-job-runner
+      restartPolicy: Never
+      containers:
+      - name: acs-config
+        image: quay.io/agnosticd/ee-multicloud:latest
+        command:
+          - /bin/bash
+          - '-c'
+          - |
+            set -e
+            set -x
+            
+            # Clone the gitops repo to get playbooks and vars
+            echo "Cloning gitops repository..."
+            git clone --depth 1 --branch ${GITOPS_BRANCH:-main} ${GITOPS_REPO_URL} /tmp/gitops || true
+            
+            # Change to the ansible directory
+            cd /tmp/gitops/ansible
+            
+            # Run the ansible playbook
+            echo "Running ansible playbook for ACS configuration"
+            ansible-playbook -i localhost playbook-configure-acs.yaml
+            
+            echo "ACS configuration completed successfully"
+        envFrom:
+        - configMapRef:
+            name: acs-config-job-config
+

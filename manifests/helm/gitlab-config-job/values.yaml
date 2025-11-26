@@ -1,0 +1,14 @@
+# Default values for gitlab-config-job
+# Cluster name - change this to configure different clusters
+# Options: atlantis, central, gotham, madripoor, metropolis, wakanda
+cluster: atlantis
+
+namespace: gitlab
+
+gitlab:
+  namespace: gitlab
+
+gitops:
+  repoUrl: "https://github.com/rh-trucathon/gitops.git"
+  branch: "main"
+
