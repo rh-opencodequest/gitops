@@ -36,9 +36,9 @@
   - set_fact:
       central_admin_password: '{{ admin_secret.resources[0].data.password | b64decode }}'
 
-  - name: Find policies
+  - name: Find OpenCodeQuest-CVE-2016-1000031 policy
     uri:
-      url: '{{ acs_api }}/policies?query=Policy%3AImage%20is%20not%20signed'
+      url: '{{ acs_api }}/policies?query=name%3AOpenCodeQuest-CVE-2016-1000031'
       validate_certs: '{{ validate_certs }}'
       url_username: admin
       url_password: '{{ central_admin_password }}'
@@ -47,8 +47,8 @@
     changed_when: false
 
   - set_fact:
-      policy_id: '{{ (find_policies_response.json.policies | first).id }}'
-    when: find_policies_response.json.policies | count > 0
+      policy_id: '{{ (find_policies_response.json.policies | selectattr("name", "equalto", "OpenCodeQuest-CVE-2016-1000031") | first).id }}'
+    when: find_policies_response.json.policies | selectattr("name", "equalto", "OpenCodeQuest-CVE-2016-1000031") | list | count > 0
 
   - name: Create the policy
     uri:
