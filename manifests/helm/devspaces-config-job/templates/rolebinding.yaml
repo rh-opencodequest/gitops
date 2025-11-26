@@ -1,0 +1,29 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devspaces-config-job-runner
+  namespace: openshift-gitops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: devspaces-config-job-runner
+subjects:
+- kind: ServiceAccount
+  name: devspaces-config-job-runner
+  namespace: {{ .Values.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devspaces-config-job-runner
+  namespace: {{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: devspaces-config-job-runner
+subjects:
+- kind: ServiceAccount
+  name: devspaces-config-job-runner
+  namespace: {{ .Values.namespace }}
+
