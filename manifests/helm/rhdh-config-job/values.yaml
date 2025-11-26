@@ -3,7 +3,7 @@
 # Options: atlantis, central, gotham, madripoor, metropolis, wakanda
 cluster: atlantis
 
-namespace: backstage
+namespace: default
 
 gitlab:
   namespace: gitlab

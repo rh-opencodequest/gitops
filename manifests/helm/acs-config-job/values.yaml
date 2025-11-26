@@ -1,5 +1,5 @@
 # Default values for acs-config-job
-namespace: stackrox
+namespace: default
 
 gitops:
   repoUrl: "https://github.com/rh-trucathon/gitops.git"

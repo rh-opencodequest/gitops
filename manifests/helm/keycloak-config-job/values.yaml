@@ -3,7 +3,7 @@
 # Options: atlantis, central, gotham, madripoor, metropolis, wakanda
 cluster: atlantis
 
-namespace: rhsso
+namespace: default
 
 keycloak:
   namespace: rhsso
