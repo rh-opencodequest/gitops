@@ -8,7 +8,7 @@ spec:
     server: 'https://kubernetes.default.svc'
   project: default
   source:
-    repoURL: 'https://github.com/rh-trucathon/gitops.git'
+    repoURL: 'https://github.com/rh-opencodequest/gitops.git'
     targetRevision: main
     path: manifests/helm/gitlab-config-job
     helm:

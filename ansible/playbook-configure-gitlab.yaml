@@ -6,7 +6,7 @@
     gitlab_api: https://{{ gitlab_hostname }}/api/v4
     domain_name: "{{ gitlab_hostname | regex_replace('^[^.]+\\.', '') }}"
     ocp_uid: "{{ domain_name.split('.')[2] }}"
-    gh_source_repo: https://github.com/rh-trucathon/rhdh-templates
+    gh_source_repo: https://github.com/rh-opencodequest/rhdh-templates
     gl_dest_repo: https://root:{{ root_token }}@{{ gitlab_hostname }}/rhdh/opencodequest-templates
     repo_local_path: /tmp/gh
 
@@ -212,7 +212,7 @@
     - name: Update domain_name with GitLab FQDN in Location
       ansible.builtin.replace:
         path: "{{ item }}"
-        regexp: 'github.com/rh-trucathon/rhdh-templates/blob/main/'
+        regexp: 'github.com/rh-opencodequest/rhdh-templates/blob/main/'
         replace: '{{ gitlab_hostname }}/rhdh/opencodequest-templates/-/blob/master/'
         backup: no
       loop:

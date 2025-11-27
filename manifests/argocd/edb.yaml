@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     path: manifests/yaml/edb-operator
-    repoURL: 'https://github.com/rh-trucathon/gitops.git'
+    repoURL: 'https://github.com/rh-opencodequest/gitops.git'
     targetRevision: main
   syncPolicy:
     automated: {}

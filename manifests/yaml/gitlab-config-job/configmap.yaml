@@ -6,6 +6,6 @@ metadata:
 data:
   CLUSTER: "atlantis"  # Change this to configure different clusters: atlantis, central, gotham, madripoor, metropolis, wakanda
   GITLAB_NAMESPACE: "gitlab"
-  GITOPS_REPO_URL: "https://github.com/rh-trucathon/gitops.git"
+  GITOPS_REPO_URL: "https://github.com/rh-opencodequest/gitops.git"
   GITOPS_BRANCH: "main"
 

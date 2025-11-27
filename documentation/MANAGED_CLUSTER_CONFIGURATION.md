@@ -198,11 +198,11 @@ stringData:
 type: Opaque
 ```
 
-Pour créer les utilisateurs dans **GitLab**, utiliser [le script de Guillaume](https://github.com/rh-trucathon/user_management/tree/main/userFiles).
+Pour créer les utilisateurs dans **GitLab**, utiliser [le script de Guillaume](https://github.com/rh-opencodequest/user_management/tree/main/userFiles).
 
 ```sh
-git clone https://github.com/rh-trucathon/user_management rh-trucathon-user_management
-cd rh-trucathon-user_management
+git clone https://github.com/rh-opencodequest/user_management rh-opencodequest-user_management
+cd rh-opencodequest-user_management
 
 export GITLAB_ENDPOINT="$(oc get route -n gitlab gitlab -o jsonpath='https://{.spec.host}/')"
 export GITLAB_PAT="$(oc extract -n gitlab secret/root-user-personal-token --to=- --keys=token 2>/dev/null)"
@@ -226,7 +226,7 @@ Se connecter à l'interface de backstage, s'authentifier sur **GitLab** avec l'u
 Dans l'interface de Backstage, cliquer sur **+ Create** > **Register Existing Component**.
 Renseigner l'URL et cliquer sur Import.
 
-Format de l'URL: https://github.com/rh-trucathon/user_management/blob/main/userFiles/backstage_users/atlantis.yaml
+Format de l'URL: https://github.com/rh-opencodequest/user_management/blob/main/userFiles/backstage_users/atlantis.yaml
 
 Étendre la taille du PVC du PostgreSQL de Quay.
 
